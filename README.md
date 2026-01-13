@@ -1,54 +1,184 @@
-# 🚀 HwpxToMarkdown
+⚠ This project is currently in early development.
+The API and samples are not yet stable.
 
-> **HWPX 문서의 표(Table) 데이터를 손실 없이 Markdown으로 복원하는 하이브리드 추출 엔진**
+# hwpx-owpml-model
 
----
+## What is this?
 
-## 📌 프로젝트 소개 (Introduction)
+`hwpx-owpml-model` is a lightweight OWPML (HWPX) parsing and modeling library for extracting structured content from HWPX documents.
 
-### 1) 핵심 요약
+It provides:
 
-* **하이브리드 엔진:** 규칙 기반(Rule-based) 파싱과 경량 AI 모델을 융합하여 기존 변환 도구의 한계를 극복합니다.
-* **RAG 최적화:** LLM 및 RAG(Retrieval-Augmented Generation) 수행을 위한 고품질 텍스트/마크다운 전처리 도구입니다.
+* An OOXML-based model for OWPML
+* A tree-based representation of document elements (sections, paragraphs, runs, tables, etc.)
+* APIs to extract text and document structure for downstream processing (e.g. Markdown, RAG, LLM pipelines)
 
-### 2) 기획 배경
+This project is designed to be used as a **core parsing layer** for:
 
-* **기존 방식의 한계:** LLM API를 활용한 OCR 방식은 복잡한 표 데이터 파싱 시 구조가 깨지는 문제가 발생합니다.
-* **자동화 니즈:** RAG 시스템 구축 시 HWPX 문서를 정형화된 데이터(Markdown)로 변환하는 과정의 까다로움을 해결하고자 시작했습니다.
-
----
-
-## ✨ 주요 기능 (Key Features)
-
-* **HWPX(OWPML) 구조 분석:** 한컴 오픈 표준 스키마를 바탕으로 문서의 논리 구조를 정확하게 파악합니다.
-* **고정밀 표 데이터 추출:** 표의 병합 상태, 그리드 구조를 유지하며 마크다운 테이블 형식으로 변환합니다.
+* HWPX → Markdown converters
+* RAG document ingestion pipelines
+* Search / indexing systems
+* AI-based document understanding
 
 ---
 
-## 🛠 기술 스택 (Tech Stack)
+## Why this exists
 
-* **Language:** C++ (표준 C++ 전환 계획 중)
-* **Library:** [Hancom OWPML SDK](https://github.com/hancom-io/hwpx-owpml-model.git) (Apache 2.0)
+HWPX (OWPML) is a powerful but complex XML-based format.
+Directly consuming it in downstream pipelines (RAG, search, summarization, etc.) is difficult without a clean document model.
 
----
+This project solves that by:
 
-## 🔍 기술적 도전 과제 (Technical Challenges)
-
-### 1️⃣ 하이브리드 경량 AI 모델 구축
-
-* **데이터 확보:** 표 구조 인식을 위한 테스트케이스 **2,000개 이상 자체 제작** 및 학습 예정입니다.
-* **최적화:** 저사양 환경에서도 원활하게 동작하도록 모델 경량화 작업을 병행하고 있습니다.
-
-### 2️⃣ 플랫폼 의존성 탈피 (Standard C++ 전환)
-
-* **현황:** 현재 한컴 SDK가 Windows 종속적인 변수와 함수를 사용하고 있어 OS 제약이 있습니다.
-* **목표:** 추후 윈도우 의존성을 제거하고 **표준 C++**로 재설계하여 리눅스 등 다양한 서버 환경에서도 작동하게 할 예정입니다.
+* Converting raw OWPML into a structured object model
+* Allowing deterministic traversal of sections and elements
+* Making text and layout information accessible for rule-based and AI-based processing
 
 ---
 
-## ⚙️ 설치 및 사용법 (Installation & Usage)
+## Features
 
-> 현재 개발 중인 프로젝트입니다.
-> 기본적인 빌드 환경 구성 및 SDK 연동 작업이 진행 중이며, 상세 가이드는 첫 번째 안정 버전 릴리즈 시 업데이트될 예정입니다.
-> 첫 번째 안정 버전 릴리즈는 1월 말로 계획 중입니다.
+* OOXML-style object model for OWPML
+* Section and element traversal
+* Text extraction from paragraphs and runs
+* Table, block and inline element support
+* Sample code for extracting text from a document section
 
+⚠ Current sample code extracts only the **first section** of a document.
+This is intentional for demonstration purposes.
+
+---
+
+## Getting started (Windows build)
+
+### Build environment
+
+* Microsoft Windows 10
+* Microsoft Visual Studio 2017 (15.9.42)
+* Platform: x86
+
+### Build steps
+
+1. Open the solution in Visual Studio
+2. Select configuration: `Debug` or `Release`
+3. Select platform: `x86`
+4. Build the solution
+
+After building, the following files will be generated in `Build/Bin`:
+
+* `Owpml.lib`
+* `OWPMLApi.lib`
+* `OWPMLUtil.lib`
+* `OWPMLTest.exe`
+
+You can link these libraries into your own projects to use the OWPML model.
+
+---
+
+## Running the sample
+
+### From Visual Studio
+
+Set command line arguments in:
+
+```
+Project Properties → Debugging → Command Arguments
+```
+
+Use:
+
+```
+<INPUT_FILE.hwpx> <OUTPUT_FILE.txt>
+```
+
+### From command line
+
+```bash
+OWPMLTest.exe InputFile.hwpx OutputFile.txt
+```
+
+This will extract text from the first section and write it to the output file.
+
+---
+
+## Use in document pipelines
+
+This library is intended to be used as a **low-level parser** in larger systems such as:
+
+* HWPX → Markdown converters
+* RAG pipelines (document chunking, embedding, retrieval)
+* Search / indexing systems
+* AI-based summarization or document understanding
+
+It provides the structured representation required for:
+
+* Rule-based transformations
+* AI-assisted table and layout processing
+
+---
+
+## Contribution guidelines
+
+### Code style
+
+* Use spaces instead of tabs
+* UTF-8 encoding
+
+### Commit convention
+
+* Separate title and body with a blank line
+* Title: within 50 characters
+  Format: `<domain>: <summary>`
+  Example: `engine: Improve OWPML table traversal`
+* Korean: noun phrase
+* English: imperative verb form
+* Body lines wrap at 72 characters
+* Focus on **why** and **how**, not just what
+
+---
+
+## Branch & workflow
+
+### Clone
+
+```bash
+git clone https://github.com/hancom-io/hwpx-owpml-model.git
+```
+
+### Create a branch
+
+```bash
+git checkout -b <your-branch-name>
+git push origin <your-branch-name>
+```
+
+### Push and create PR
+
+```bash
+git status
+git add .
+git commit -m "#<issue-number> <message>"
+git push origin <your-branch-name>
+```
+
+Open a Pull Request to merge into `main`.
+
+---
+
+## License
+
+See [LICENSE.txt](LICENSE.txt) for details.
+
+---
+
+## Acknowledgements
+
+This project is based on and inspired by Hancom’s official OWPML reference implementation:
+https://github.com/hancom-io/hwpx-owpml-model
+
+It reuses the OWPML object model and XML structure as a foundation, and builds higher-level document processing and AI-oriented pipelines on top of it.
+
+---
+
+## Contact
+
+For questions and discussion, use the GitHub Discussions tab.
