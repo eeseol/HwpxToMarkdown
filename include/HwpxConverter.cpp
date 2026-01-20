@@ -1,3 +1,5 @@
+#define DEBUG_PARA_LOG 0
+
 #include "OwpmSDKPrelude.h"
 #include "HwpxConverter.h"
 
@@ -70,17 +72,13 @@ bool ConvertHwpxToHtml(
         }
     }
 
-    // =====================================================================
-// [PARA LEVEL STYLE LOG TEST] START
-// 문단(CPType)에서 engName을 추출하고
-// "매핑됨 / 미매핑" 분류해서 집계하는 테스트용 로거
-// =====================================================================            
+    //PARA 디버깅 코드
+    #if DEBUG_PARA_LOG
 
-     Html::DumpStyleLogToConsole();
+    Html::DumpStyleLogToConsole();
 
-    // =====================================================================
-    // [PARA LEVEL STYLE LOG TEST] END
-    // =====================================================================
+    #endif // DEBUG_PARA_LOG
+
 
     // HTML 문서 래핑
     std::wstring html;

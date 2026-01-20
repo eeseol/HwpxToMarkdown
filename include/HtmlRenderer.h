@@ -1,6 +1,5 @@
 #pragma once
-#include <map>
-#include <iostream>
+
 #include <string>
 #include <cwctype>
 #include "SDK_Wrapper.h"
@@ -112,7 +111,6 @@ namespace Html {
     // [PARA LEVEL STYLE LOG TEST] END
     // =====================================================================
 
-
     // class명을 우리가 원하는 방식으로 정리
     // 예: "Outline 4" -> "outline-4"
     inline std::wstring NormalizeClassName(const std::wstring& engName)
@@ -184,7 +182,7 @@ namespace Html {
             // 문단(CPType)에서 engName을 추출하고
             // "매핑됨 / 미매핑" 분류해서 집계하는 테스트용 로거
             // =====================================================================            
-            
+
             LogParaStyle(engName);
 
             // =====================================================================
