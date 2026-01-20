@@ -9,6 +9,26 @@
 
 namespace Html {
 
+    // ===========================
+    // Cell mode toggle
+    // - when true: paragraph tags are suppressed, only plain text is emitted
+    // ===========================
+    inline bool& CellMode()
+    {
+        static bool cellMode = false;
+        return cellMode;
+    }
+
+    inline void SetCellMode(bool on)
+    {
+        CellMode() = on;
+    }
+
+    inline bool IsCellMode()
+    {
+        return CellMode();
+    }
+
     // Extract level from styles like "Outline 4" -> 4, otherwise 0
     inline int ExtractOutlineLevel(const std::wstring& engName)
     {
@@ -177,7 +197,11 @@ namespace Html {
             }
             else if (childID == ID_PARA_LineBreak)
             {
-                ParaBuffer() += L"<br/>";
+                // 셀 모드에서는 줄바꿈 태그를 넣지 않음 (필요하면 공백으로)
+                if (!IsCellMode())
+                    ParaBuffer() += L"<br/>";
+                else
+                    ParaBuffer() += L" ";
             }
         }
     }
@@ -186,7 +210,11 @@ namespace Html {
     inline void ProcessLineSeg()
     {
         if (!InPara()) return;
-        ParaBuffer() += L"<br/>";
+
+        if (!IsCellMode())
+            ParaBuffer() += L"<br/>";
+        else
+            ParaBuffer() += L" ";
     }
 
     // Called when leaving a paragraph
@@ -196,9 +224,17 @@ namespace Html {
 
         if (HasMeaningfulText(ParaBuffer()))
         {
-            out += L"<" + ParaTag() + L" class=\"" + ParaClass() + L"\">";
-            out += ParaBuffer();
-            out += L"</" + ParaTag() + L">\n";
+            // 셀 모드에서는 태그 없이 텍스트만 out에 붙임
+            if (IsCellMode())
+            {
+                out += ParaBuffer();
+            }
+            else
+            {
+                out += L"<" + ParaTag() + L" class=\"" + ParaClass() + L"\">";
+                out += ParaBuffer();
+                out += L"</" + ParaTag() + L">\n";
+            }
         }
 
         InPara() = false;

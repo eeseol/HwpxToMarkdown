@@ -4,6 +4,7 @@
 #include <map>
 #include <iostream>
 #include <vector>
+#include <algorithm>
 
 #include "SDK_Wrapper.h"
 #include "HtmlRenderer.h"
@@ -11,20 +12,23 @@
 // forward decl
 inline void ExtractTextImpl(OWPML::CObject* object, std::wstring& out, int depth);
 
+// =====================
+// Config & Utilities
+// =====================
 namespace WalkConfig
 {
-    // ====== 개발 모드 토글 ======
-    static constexpr bool SCAN_MODE = false;      // ID once 스캔
-    static constexpr bool DUMP_MODE = false;      // 서브트리 덤프
-    static constexpr bool TABLE_LOG = false;      // 테이블 렌더 로그
+    // ====== 개발/디버그 토글 ======
+    static constexpr bool SCAN_MODE = false;
+    static constexpr bool DUMP_MODE = false;
+    static constexpr bool TABLE_LOG = false;
 
-    // ====== 5단계(표 루트 확정) ID ======
-    static constexpr unsigned int TABLE_ROOT_ID = 805306373;   // 진짜 테이블 루트
-    static constexpr unsigned int COL_ID = 805306463;          // 열(컬럼) 묶음
-    static constexpr unsigned int CELL_WRAPPER_ID = 805306465; // 열 내부에서 row index 역할
-    static constexpr unsigned int CELL_CONTENT_ID = 805306406; // 셀 실제 컨텐츠(문단 들어있음)
+    // ====== 표 ID (너 로그로 확정된 값들) ======
+    static constexpr unsigned int TABLE_ROOT_ID = 805306373; // 테이블 루트
+    static constexpr unsigned int ROW_GROUP_ID = 805306463; // row group (small_table 기준)
+    static constexpr unsigned int CELL_WRAPPER_ID = 805306465; // 셀 wrapper
+    static constexpr unsigned int CELL_CONTENT_ID = 805306406; // 셀 내용
 
-    // ====== 덤프 관련(필요하면 다시 켜서 사용) ======
+    // ====== 덤프 모드(필요하면 다시 켜서 사용) ======
     static constexpr unsigned int TARGET_ID = TABLE_ROOT_ID;
     static constexpr int DUMP_MAX_REL_DEPTH = 12;
 
@@ -59,7 +63,6 @@ namespace WalkConfig
         if (cnt == 1)
         {
             const int childCount = CountChildrenByObjectList(obj);
-
             std::wcout
                 << L"[SCAN] depth=" << depth
                 << L" id=" << id
@@ -144,10 +147,11 @@ namespace WalkConfig
     }
 }
 
-// ======================================
-// 5-3: Table Root 전용 처리(실제 HTML 출력)
-// - column-major -> row-major로 재조합
-// ======================================
+// =====================
+// Table renderer
+// - small_table 기준: TABLE_ROOT(373) -> ROW_GROUP(463) -> CELL_WRAPPER(465) -> CELL_CONTENT(406)
+// - td 안은 CellMode=true 로 ExtractTextImpl을 태워서 "텍스트만" 나오게 함
+// =====================
 inline void RenderTableFromRoot373(OWPML::CObject* tableRoot, std::wstring& out, int depth)
 {
     if (!tableRoot) return;
@@ -155,9 +159,9 @@ inline void RenderTableFromRoot373(OWPML::CObject* tableRoot, std::wstring& out,
     const unsigned int rid = SDK::GetID(tableRoot);
     if (rid != WalkConfig::TABLE_ROOT_ID) return;
 
-    // 1) rowGroups 모으기 (기존 columns)
+    // 1) rowGroups 모으기
     std::vector<OWPML::CObject*> rowGroups;
-    WalkConfig::CollectChildrenById(tableRoot, WalkConfig::COL_ID, rowGroups);
+    WalkConfig::CollectChildrenById(tableRoot, WalkConfig::ROW_GROUP_ID, rowGroups);
 
     const int rowCount = (int)rowGroups.size();
     if (rowCount <= 0) return;
@@ -172,7 +176,21 @@ inline void RenderTableFromRoot373(OWPML::CObject* tableRoot, std::wstring& out,
         maxColCount = std::max(maxColCount, (int)rowCells[r].size());
     }
 
-    // 3) HTML 출력: row 먼저, 그 안에 col
+    if (WalkConfig::TABLE_LOG)
+    {
+        std::wcout << L"\n[TABLE] ===== Render Start =====\n";
+        std::wcout << L"[TABLE] depth=" << depth
+            << L" rows=" << rowCount
+            << L" maxCols=" << maxColCount
+            << L"\n";
+        for (int r = 0; r < rowCount; ++r)
+        {
+            std::wcout << L"[TABLE]  row[" << r << L"] cols=" << (int)rowCells[r].size() << L"\n";
+        }
+        std::wcout << L"[TABLE] ==========================\n\n";
+    }
+
+    // 3) HTML 출력
     out += L"<table>\n";
 
     for (int r = 0; r < rowCount; ++r)
@@ -181,17 +199,22 @@ inline void RenderTableFromRoot373(OWPML::CObject* tableRoot, std::wstring& out,
 
         for (int c = 0; c < maxColCount; ++c)
         {
-            out += L"<td>\n";
+            out += L"<td>";
 
+            // 빈셀 방어
             if (c < (int)rowCells[r].size())
             {
                 OWPML::CObject* cellWrapper = rowCells[r][c];
                 OWPML::CObject* content = WalkConfig::FindFirstChildById(cellWrapper, WalkConfig::CELL_CONTENT_ID);
 
+                Html::SetCellMode(true);
+
                 if (content)
                     ExtractTextImpl(content, out, depth + 1);
                 else
                     ExtractTextImpl(cellWrapper, out, depth + 1);
+
+                Html::SetCellMode(false);
             }
 
             out += L"</td>\n";
@@ -203,9 +226,9 @@ inline void RenderTableFromRoot373(OWPML::CObject* tableRoot, std::wstring& out,
     out += L"</table>\n";
 }
 
-// ================================
-// 재귀 본체
-// ================================
+// =====================
+// Main recursive walker
+// =====================
 inline void ExtractTextImpl(OWPML::CObject* object, std::wstring& out, int depth)
 {
     if (!object) return;
@@ -239,14 +262,14 @@ inline void ExtractTextImpl(OWPML::CObject* object, std::wstring& out, int depth
 
         switch (id)
         {
-            // ====== 5-3 핵심: 805306373은 무조건 전용 렌더로 처리 ======
+            // TABLE ROOT는 전용 렌더로만 처리하고, 절대 재귀로 내려가지 않음
         case WalkConfig::TABLE_ROOT_ID:
         {
             RenderTableFromRoot373(child, out, depth);
             break;
         }
 
-        // ====== Paragraph/Text ======
+        // 일반 Paragraph 출력 (표 밖 텍스트)
         case ID_PARA_PType:
         {
             Html::BeginParagraph((OWPML::CPType*)child);
@@ -254,16 +277,21 @@ inline void ExtractTextImpl(OWPML::CObject* object, std::wstring& out, int depth
             Html::EndParagraph(out);
             break;
         }
+
+        // TextRun
         case ID_PARA_T:
         {
             Html::ProcessText((OWPML::CT*)child);
             break;
         }
+
+        // 줄바꿈 처리 (표 밖에서만 의미 있음)
         case ID_PARA_LineSeg:
         {
             Html::ProcessLineSeg();
             break;
         }
+
         default:
             ExtractTextImpl(child, out, depth + 1);
             break;
