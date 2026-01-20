@@ -1,87 +1,129 @@
 #pragma once
-#include "OwpmSDKPrelude.h"
+#include <string>
+#include <cwctype>
 #include "SDK_Wrapper.h"
 
-namespace Rules {
+namespace Html {
 
-    inline std::wstring EscapeHtml(const std::wstring& s) {
-        std::wstring out;
-        out.reserve(s.size());
-
-        for (wchar_t c : s) {
-            switch (c) {
-            case L'&': out += L"&amp;"; break;
-            case L'<': out += L"&lt;";  break;
-            case L'>': out += L"&gt;";  break;
-            case L'"': out += L"&quot;"; break;
-            default:   out += c; break;
-            }
-        }
-        return out;
-    }
-
-    inline std::wstring MapEngNameToTag(const std::wstring& engName) {
+    // Outline → HTML 태그 매핑
+    inline std::wstring MapEngNameToTag(const std::wstring& engName)
+    {
         if (engName == L"Outline 1") return L"h1";
         if (engName == L"Outline 2") return L"h2";
         if (engName == L"Outline 3") return L"h3";
         if (engName == L"Outline 4") return L"h4";
         if (engName == L"Outline 5") return L"h5";
+        if (engName == L"Outline 6") return L"h6";   // 추가
         return L"p";
     }
 
-    // 문단 들어갈 때 <p> or <h1> 오픈
-    inline void OnPreProcess(OWPML::CObject* obj, std::wstring& out) {
+    // 의미 있는 텍스트가 있는지 체크 (공백/개행만 있는 문단 제거)
+    inline bool HasMeaningfulText(const std::wstring& s)
+    {
+        // 1) 그냥 공백/탭/개행만 있으면 빈 문단
+        for (wchar_t ch : s) {
+            if (!iswspace(ch)) return true;
+        }
+        return false;
+    }
+
+    // 문단 상태 저장용 (간단하게 static으로 처리)
+    inline bool& InPara()
+    {
+        static bool inPara = false;
+        return inPara;
+    }
+
+    inline std::wstring& ParaTag()
+    {
+        static std::wstring tag;
+        return tag;
+    }
+
+    inline std::wstring& ParaClass()
+    {
+        static std::wstring cls;
+        return cls;
+    }
+
+    inline std::wstring& ParaBuffer()
+    {
+        static std::wstring buf;
+        return buf;
+    }
+
+    // 1) 문단 들어갈 때: 태그를 "바로 출력하지 말고" 상태만 저장
+    inline void OnPreProcess(OWPML::CObject* obj, std::wstring& out)
+    {
+        (void)out; // out은 여기선 안 씀
         const unsigned int id = SDK::GetID(obj);
 
-        if (id == ID_PARA_PType) {
+        if (id == ID_PARA_PType)
+        {
             auto* para = (OWPML::CPType*)obj;
 
             const unsigned int styleID = SDK::GetParaStyleID(para);
             const std::wstring engName = SDK::GetStyleEngName(styleID);
             const std::wstring tag = MapEngNameToTag(engName);
 
-            out += L"<" + tag + L" class=\"" + engName + L"\">";
+            InPara() = true;
+            ParaTag() = tag;
+            ParaClass() = engName;
+            ParaBuffer().clear();
         }
     }
 
-    // CT에서 글자/줄바꿈 처리
-    inline void OnProcess(OWPML::CObject* obj, std::wstring& out) {
+    // 2) 텍스트 처리: out 말고 ParaBuffer에 모은다
+    inline void OnProcess(OWPML::CObject* obj, std::wstring& out)
+    {
+        (void)out; // out은 여기선 안 씀
         const unsigned int id = SDK::GetID(obj);
 
-        if (id == ID_PARA_T) {
+        if (id == ID_PARA_T && InPara())
+        {
             auto* text = (OWPML::CT*)obj;
+            const int count = SDK::GetChildCount(text);
 
-            const int cnt = SDK::GetChildCount(text);
-            for (int i = 0; i < cnt; ++i) {
-                auto* child = SDK::GetChildByIndex(text, i);
+            for (int i = 0; i < count; ++i)
+            {
+                OWPML::CObject* child = SDK::GetChildByIndex(text, i);
                 if (!child) continue;
 
-                const unsigned int cid = SDK::GetID(child);
+                const unsigned int childID = SDK::GetID(child);
 
-                if (cid == ID_PARA_Char) {
-                    auto* ch = (OWPML::CChar*)child;
-                    out += EscapeHtml(SDK::GetCharValue(ch));
+                if (childID == ID_PARA_Char)
+                {
+                    ParaBuffer() += SDK::GetCharValue((OWPML::CChar*)child);
                 }
-                else if (cid == ID_PARA_LineBreak) {
-                    out += L"<br/>";
+                else if (childID == ID_PARA_LineBreak)
+                {
+                    ParaBuffer() += L"<br/>";
                 }
             }
         }
     }
 
-    // 문단 끝나면 </p> 닫기
-    inline void OnPostProcess(OWPML::CObject* obj, std::wstring& out) {
+    // 3) 문단 끝: ParaBuffer 보고 비었으면 출력 안 함
+    inline void OnPostProcess(OWPML::CObject* obj, std::wstring& out)
+    {
         const unsigned int id = SDK::GetID(obj);
 
-        if (id == ID_PARA_PType) {
-            auto* para = (OWPML::CPType*)obj;
+        if (id == ID_PARA_PType && InPara())
+        {
+            // 빈 문단이면 출력 스킵
+            if (HasMeaningfulText(ParaBuffer()))
+            {
+                out += L"<" + ParaTag() + L" class=\"" + ParaClass() + L"\">";
+                out += ParaBuffer();
+                out += L"</" + ParaTag() + L">\n";
+            }
 
-            const unsigned int styleID = SDK::GetParaStyleID(para);
-            const std::wstring engName = SDK::GetStyleEngName(styleID);
-            const std::wstring tag = MapEngNameToTag(engName);
-
-            out += L"</" + tag + L">\n";
+            // 문단 상태 종료
+            InPara() = false;
+            ParaTag().clear();
+            ParaClass().clear();
+            ParaBuffer().clear();
         }
     }
 
-} // namespace Rules
+} // namespace Html
