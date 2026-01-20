@@ -5,22 +5,53 @@
 
 namespace Html {
 
+    // "Outline 4" 같은 문자열에서 숫자만 뽑아내기
+    // 매칭되면 level(1~10)을 리턴, 아니면 0 리턴
+    inline int ExtractOutlineLevel(const std::wstring& engName)
+    {
+        const std::wstring prefix = L"Outline ";
+        if (engName.rfind(prefix, 0) != 0) return 0; // 시작이 "Outline "이 아니면 탈락
+
+        // 뒤에 숫자 파싱
+        int level = 0;
+        for (size_t i = prefix.size(); i < engName.size(); ++i)
+        {
+            if (!iswdigit(engName[i])) break;
+            level = level * 10 + (engName[i] - L'0');
+        }
+        return level;
+    }
+
     // Outline → HTML 태그 매핑
     inline std::wstring MapEngNameToTag(const std::wstring& engName)
     {
-        if (engName == L"Outline 1") return L"h1";
-        if (engName == L"Outline 2") return L"h2";
-        if (engName == L"Outline 3") return L"h3";
-        if (engName == L"Outline 4") return L"h4";
-        if (engName == L"Outline 5") return L"h5";
-        if (engName == L"Outline 6") return L"h6";   // 추가
+        const int level = ExtractOutlineLevel(engName);
+
+        // Outline 1~6만 h1~h6
+        if (level >= 1 && level <= 6) {
+            return L"h" + std::to_wstring(level);
+        }
+
+        // Outline 7~10은 p로 처리
         return L"p";
+    }
+
+    // class명을 우리가 원하는 방식으로 정리
+    // 예: "Outline 4" -> "outline-4"
+    inline std::wstring NormalizeClassName(const std::wstring& engName)
+    {
+        const int level = ExtractOutlineLevel(engName);
+        if (level >= 1 && level <= 10) {
+            return L"outline-" + std::to_wstring(level);
+        }
+
+        // Outline 아니면 그대로 유지 (Normal 같은거)
+        return engName;
     }
 
     // 의미 있는 텍스트가 있는지 체크 (공백/개행만 있는 문단 제거)
     inline bool HasMeaningfulText(const std::wstring& s)
     {
-        // 1) 그냥 공백/탭/개행만 있으면 빈 문단
         for (wchar_t ch : s) {
             if (!iswspace(ch)) return true;
         }
@@ -55,7 +86,7 @@ namespace Html {
     // 1) 문단 들어갈 때: 태그를 "바로 출력하지 말고" 상태만 저장
     inline void OnPreProcess(OWPML::CObject* obj, std::wstring& out)
     {
-        (void)out; // out은 여기선 안 씀
+        (void)out;
         const unsigned int id = SDK::GetID(obj);
 
         if (id == ID_PARA_PType)
@@ -64,11 +95,16 @@ namespace Html {
 
             const unsigned int styleID = SDK::GetParaStyleID(para);
             const std::wstring engName = SDK::GetStyleEngName(styleID);
+
+            // 태그 결정 (Outline 1~6은 h1~h6, Outline 7~10은 p)
             const std::wstring tag = MapEngNameToTag(engName);
+
+            // class명 정규화 (Outline 4 -> outline-4)
+            const std::wstring cls = NormalizeClassName(engName);
 
             InPara() = true;
             ParaTag() = tag;
-            ParaClass() = engName;
+            ParaClass() = cls;
             ParaBuffer().clear();
         }
     }
@@ -76,7 +112,7 @@ namespace Html {
     // 2) 텍스트 처리: out 말고 ParaBuffer에 모은다
     inline void OnProcess(OWPML::CObject* obj, std::wstring& out)
     {
-        (void)out; // out은 여기선 안 씀
+        (void)out;
         const unsigned int id = SDK::GetID(obj);
 
         if (id == ID_PARA_T && InPara())
@@ -110,7 +146,6 @@ namespace Html {
 
         if (id == ID_PARA_PType && InPara())
         {
-            // 빈 문단이면 출력 스킵
             if (HasMeaningfulText(ParaBuffer()))
             {
                 out += L"<" + ParaTag() + L" class=\"" + ParaClass() + L"\">";
@@ -118,7 +153,6 @@ namespace Html {
                 out += L"</" + ParaTag() + L">\n";
             }
 
-            // 문단 상태 종료
             InPara() = false;
             ParaTag().clear();
             ParaClass().clear();
