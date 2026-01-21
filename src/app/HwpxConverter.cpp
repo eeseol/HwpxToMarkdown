@@ -3,6 +3,7 @@
 #include "sdk/OwpmSDKPrelude.h"
 #include "app/HwpxConverter.h"
 
+#include "render/HtmlRenderer.h"
 #include "walker/DocumentWalker.h"
 #include "sdk/SDK_Wrapper.h"
 

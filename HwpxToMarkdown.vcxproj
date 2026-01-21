@@ -133,8 +133,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\app\HwpxConverter.cpp" />
+    <ClCompile Include="src\render\HtmlRenderer.cpp" />
     <ClCompile Include="src\sdk\SDK_Wrapper.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\walker\DocumentWalker.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="lib\Owpml.lib" />
