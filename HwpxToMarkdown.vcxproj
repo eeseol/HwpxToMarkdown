@@ -137,6 +137,9 @@
     <ClCompile Include="src\sdk\SDK_Wrapper.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\walker\DocumentWalker.cpp" />
+    <ClCompile Include="src\walker\TableRenderer.cpp" />
+    <ClCompile Include="src\walker\WalkerDebug.cpp" />
+    <ClCompile Include="src\walker\WalkerUtils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="lib\Owpml.lib" />
@@ -504,6 +507,10 @@
     <ClInclude Include="include\OWPML\Zip\zip.h" />
     <ClInclude Include="src\sdk\OwpmSDKPrelude.h" />
     <ClInclude Include="src\sdk\SDK_Wrapper.h" />
+    <ClInclude Include="src\walker\TableRenderer.h" />
+    <ClInclude Include="src\walker\WalkerConfig.h" />
+    <ClInclude Include="src\walker\WalkerDebug.h" />
+    <ClInclude Include="src\walker\WalkerUtils.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
