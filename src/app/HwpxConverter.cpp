@@ -1,10 +1,11 @@
 #define DEBUG_PARA_LOG 0
 
-#include "OwpmSDKPrelude.h"
-#include "HwpxConverter.h"
+#include "sdk/OwpmSDKPrelude.h"
+#include "app/HwpxConverter.h"
 
-#include "DocumentWalker.h"
-#include "SDK_Wrapper.h"
+#include "render/HtmlRenderer.h"
+#include "walker/DocumentWalker.h"
+#include "sdk/SDK_Wrapper.h"
 
 // 스타일 접근용
 #include "OWPML/Class/Head/HWPMLHeadType.h"

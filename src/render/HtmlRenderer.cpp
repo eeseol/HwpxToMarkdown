@@ -1,31 +1,24 @@
-#pragma once
+#include "render/HtmlRenderer.h"
 
-#include <string>
 #include <cwctype>
 #include <map>
 #include <iostream>
 
-#include "SDK_Wrapper.h"
+#include "sdk/OwpmSDKPrelude.h"
+#include "sdk/SDK_Wrapper.h"
 
 namespace Html {
 
     // ===========================
     // Cell mode + LineBreak policy
     // ===========================
-    enum class CellBreakMode
-    {
-        Space,    // " "
-        Newline,  // "\n"  (HTML에서는 그대로는 안 보일 수 있음. <pre>나 CSS 필요)
-        BrTag     // "<br/>"
-    };
-
-    inline bool& CellMode()
+    static bool& CellMode()
     {
         static bool cellMode = false;
         return cellMode;
     }
 
-    inline CellBreakMode& CellBreakPolicy()
+    static CellBreakMode& CellBreakPolicy()
     {
         // 기본값: 셀 안에서도 줄바꿈을 "보이게" 하려면 BrTag가 가장 안정적
         static CellBreakMode mode = CellBreakMode::BrTag;
@@ -36,19 +29,19 @@ namespace Html {
     // - BrTag: 문단 끝마다 <br/>
     // - Space: 문단 끝마다 공백
     // - Newline: 문단 끝마다 \n
-    inline CellBreakMode& CellParagraphPolicy()
+    static CellBreakMode& CellParagraphPolicy()
     {
         static CellBreakMode mode = CellBreakMode::BrTag;
         return mode;
     }
 
-    inline bool& CellHasWrittenText()
+    static bool& CellHasWrittenText()
     {
         static bool written = false;
         return written;
     }
 
-    inline void SetCellMode(bool on)
+    void SetCellMode(bool on)
     {
         CellMode() = on;
         if (on)
@@ -58,17 +51,17 @@ namespace Html {
         }
     }
 
-    inline bool IsCellMode()
+    bool IsCellMode()
     {
         return CellMode();
     }
 
-    inline void SetCellBreakMode(CellBreakMode mode)
+    void SetCellBreakMode(CellBreakMode mode)
     {
         CellBreakPolicy() = mode;
     }
 
-    inline void SetCellParagraphMode(CellBreakMode mode)
+    void SetCellParagraphMode(CellBreakMode mode)
     {
         CellParagraphPolicy() = mode;
     }
@@ -76,7 +69,7 @@ namespace Html {
     // ===========================
     // Helpers
     // ===========================
-    inline void AppendBreak(std::wstring& buf, CellBreakMode mode)
+    static void AppendBreak(std::wstring& buf, CellBreakMode mode)
     {
         switch (mode)
         {
@@ -94,7 +87,7 @@ namespace Html {
     }
 
     // Extract level from styles like "Outline 4" -> 4, otherwise 0
-    inline int ExtractOutlineLevel(const std::wstring& engName)
+    static int ExtractOutlineLevel(const std::wstring& engName)
     {
         const std::wstring prefix = L"Outline ";
         if (engName.rfind(prefix, 0) != 0) return 0;
@@ -109,7 +102,7 @@ namespace Html {
     }
 
     // Outline -> HTML tag mapping
-    inline std::wstring MapEngNameToTag(const std::wstring& engName)
+    static std::wstring MapEngNameToTag(const std::wstring& engName)
     {
         const int level = ExtractOutlineLevel(engName);
 
@@ -125,25 +118,25 @@ namespace Html {
     // ===========================
     // Style log (optional)
     // ===========================
-    inline std::map<std::wstring, int>& StyleSeenAll()
+    static std::map<std::wstring, int>& StyleSeenAll()
     {
         static std::map<std::wstring, int> m;
         return m;
     }
 
-    inline std::map<std::wstring, int>& StyleSeenMapped()
+    static std::map<std::wstring, int>& StyleSeenMapped()
     {
         static std::map<std::wstring, int> m;
         return m;
     }
 
-    inline std::map<std::wstring, int>& StyleSeenUnmapped()
+    static std::map<std::wstring, int>& StyleSeenUnmapped()
     {
         static std::map<std::wstring, int> m;
         return m;
     }
 
-    inline bool IsMappedEngName(const std::wstring& engName)
+    static bool IsMappedEngName(const std::wstring& engName)
     {
         if (engName.rfind(L"Outline ", 0) == 0) return true;
         if (engName == L"Normal") return true;
@@ -151,7 +144,7 @@ namespace Html {
         return false;
     }
 
-    inline void LogParaStyle(const std::wstring& engName)
+    static void LogParaStyle(const std::wstring& engName)
     {
         StyleSeenAll()[engName]++;
 
@@ -161,7 +154,7 @@ namespace Html {
             StyleSeenUnmapped()[engName]++;
     }
 
-    inline void DumpStyleLogToConsole()
+    void DumpStyleLogToConsole()
     {
         std::wcout << L"\n================== STYLE LOG SUMMARY ==================\n";
         std::wcout << L"[ALL] count=" << StyleSeenAll().size() << L"\n";
@@ -178,7 +171,7 @@ namespace Html {
 
     // class name normalize
     // Example: "Outline 4" -> "outline-4"
-    inline std::wstring NormalizeClassName(const std::wstring& engName)
+    static std::wstring NormalizeClassName(const std::wstring& engName)
     {
         const int level = ExtractOutlineLevel(engName);
         if (level >= 1 && level <= 10) {
@@ -190,7 +183,7 @@ namespace Html {
     }
 
     // Check if a string has any non-whitespace
-    inline bool HasMeaningfulText(const std::wstring& s)
+    static bool HasMeaningfulText(const std::wstring& s)
     {
         for (wchar_t ch : s) {
             if (!iswspace(ch)) return true;
@@ -201,32 +194,32 @@ namespace Html {
     // ===========================
     // Paragraph state (temporary)
     // ===========================
-    inline bool& InPara()
+    static bool& InPara()
     {
         static bool inPara = false;
         return inPara;
     }
 
-    inline std::wstring& ParaTag()
+    static std::wstring& ParaTag()
     {
         static std::wstring tag;
         return tag;
     }
 
-    inline std::wstring& ParaClass()
+    static std::wstring& ParaClass()
     {
         static std::wstring cls;
         return cls;
     }
 
-    inline std::wstring& ParaBuffer()
+    static std::wstring& ParaBuffer()
     {
         static std::wstring buf;
         return buf;
     }
 
     // Called when entering a paragraph
-    inline void BeginParagraph(OWPML::CPType* para)
+    void BeginParagraph(OWPML::CPType* para)
     {
         if (!para) return;
 
@@ -243,7 +236,7 @@ namespace Html {
     }
 
     // Handle text run (CT) inside a paragraph
-    inline void ProcessText(OWPML::CT* text)
+    void ProcessText(OWPML::CT* text)
     {
         if (!text || !InPara()) return;
 
@@ -276,13 +269,13 @@ namespace Html {
 
     // Some documents use LineSeg as a logical line boundary
     // 실제 문서에서 줄바꿈이 LineBreak가 아니라 LineSeg로 더 많이 나올 수 있음
-    inline void ProcessLineSeg()
+    void ProcessLineSeg()
     {
         if (!InPara()) return;
     }
 
     // Called when leaving a paragraph
-    inline void EndParagraph(std::wstring& out)
+    void EndParagraph(std::wstring& out)
     {
         if (!InPara()) return;
 
@@ -291,7 +284,7 @@ namespace Html {
             if (IsCellMode())
             {
                 // 셀 내부: 문단 여러 개가 "붙어버리는 문제" 방지
-                // - 이전 문단 텍스트가 이미 찍혔다면, 문단 경계 구분자를 먼저 넣어준다.
+                // - 이전 문단 텍스트가 이미 찍혔다면, 문단 경계 구분자를 먼저 넣는다.
                 if (CellHasWrittenText())
                 {
                     std::wstring sep;
@@ -317,8 +310,7 @@ namespace Html {
         ParaBuffer().clear();
     }
 
-
-    inline void BeginHtmlDocument(std::wstring& out)
+    void BeginHtmlDocument(std::wstring& out)
     {
         out += LR"(<!doctype html>
 <html>
@@ -338,13 +330,12 @@ th, td {
 )";
     }
 
-    inline void EndHtmlDocument(std::wstring& out)
+    void EndHtmlDocument(std::wstring& out)
     {
         out += LR"(
 </body>
 </html>
 )";
     }
-
 
 } // namespace Html
