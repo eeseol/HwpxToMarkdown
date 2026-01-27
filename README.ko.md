@@ -20,6 +20,13 @@
 * 표(table) 레이아웃 및 텍스트 렌더링
 * 리스트 렌더링(정책: **번호 계산 없이**, `<ol>` 유지 + 화면은 점만 보이게)
 
+
+<p align="center">
+    <img src="./docs/images/table1_html.png" width="80%">
+</p>
+
+출처 : 경찰청 공식 발간자료 (2026년도 미래치안도전기술개발사업 신규과제 선정계획 공고)
+
 ---
 
 ## 지원/제한 사항
@@ -109,8 +116,9 @@ HwpxConverter.exe "test/cases/table_only.hwpx" "test/out/table_only.html"
 * 표(table)만 있는 문서
 * 리스트(list)만 있는 문서
 
----
 
+
+---
 ## 기여 가이드(간단)
 
 * 들여쓰기: 스페이스
@@ -128,3 +136,19 @@ HwpxConverter.exe "test/cases/table_only.hwpx" "test/out/table_only.html"
 ## 참고
 
 * Hancom OWPML SDK / Reference implementation: [https://github.com/hancom-io/hwpx-owpml-model](https://github.com/hancom-io/hwpx-owpml-model)
+
+---
+## 예시
+<p align="center">
+    <img src="./docs/images/table1_hwpx.png" width="80%">
+</p>
+<p align="center">
+    <img src="./docs/images/table1_html.png" width="80%">
+</p>
+<p align="center">
+    <img src="./docs/images/table2_hwpx.png" width="80%">
+</p>
+
+<p align="center">
+    <img src="./docs/images/table2_html.png" width="80%">
+</p>

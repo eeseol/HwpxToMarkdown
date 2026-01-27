@@ -20,6 +20,14 @@ Typical use cases:
 * Table (`<table>`) layout + text rendering
 * List rendering policy: **no numbering computation**, keep `<ol>` but **display bullets only** via CSS
 
+<p align="center">
+    <img src="./docs/images/table1_html.png" width="80%">
+</p>
+
+Source: Official publication of the National Police Agency 
+
+(2026년도 미래치안도전기술개발사업 신규과제 선정계획 공고)
+
 ---
 
 ## Support and limitations
@@ -125,3 +133,21 @@ See `LICENSE` for details.
 ## Reference
 
 * Hancom OWPML SDK / reference implementation: [https://github.com/hancom-io/hwpx-owpml-model](https://github.com/hancom-io/hwpx-owpml-model)
+
+---
+
+## Example
+
+<p align="center">
+    <img src="./docs/images/table1_hwpx.png" width="80%">
+</p>
+<p align="center">
+    <img src="./docs/images/table1_html.png" width="80%">
+</p>
+<p align="center">
+    <img src="./docs/images/table2_hwpx.png" width="80%">
+</p>
+
+<p align="center">
+    <img src="./docs/images/table2_html.png" width="80%">
+</p>
