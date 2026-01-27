@@ -31,12 +31,12 @@ static std::wstring StripQuotes(std::wstring s)
 
 static bool EndsWithIgnoreCase(const std::wstring& s, const std::wstring& suffix)
 {
-    if (s.size() < suffix.size()) return false;
+    if (s.size() < suffix.size()) return false; 
     size_t off = s.size() - suffix.size();
     for (size_t i = 0; i < suffix.size(); ++i) {
         wchar_t a = towlower(s[off + i]);
         wchar_t b = towlower(suffix[i]);
-        if (a != b) return false;
+        if (a != b) return false; 
     }
     return true;
 }
